@@ -13,12 +13,13 @@ import math
 '''
 
 pesosReales = [0.35, 0.20, 0.15, 0.05, 0.10, 0.15]
-learnRate = 0.001
+learnRate = 0.01
 
 def generarPesosIniciales():
     pesos = []
     for i in range(7):
         pesos.append(random.random())
+        #pesos.append(0.5)
     return pesos
 
 def generarNotasIniciales():
@@ -26,6 +27,18 @@ def generarNotasIniciales():
     for i in range(6):
         # notas.append(random.randint(0, 100))
         notas.append(random.random())
+    return notas
+
+def generarNotaAprobada():
+    notas = [0, 0, 0, 0, 0, 0]
+    while aproboSegunNotas(notas) == 0:
+        notas = generarNotasIniciales()
+    return notas
+
+def generarNotaReprobada():
+    notas = [1, 1, 1, 1, 1, 1]
+    while aproboSegunNotas(notas) == 1:
+        notas = generarNotasIniciales()
     return notas
 
 def aproboSegunNotas(notas):
@@ -43,9 +56,10 @@ def generarDatosEntrenamiento(cantidad):
 
 # Neural Net
 def sigmoid(x):
-    if x > 0:
-        return x
-    return 0
+    return 1/(1+math.exp(-x))
+    # if x > 0:
+    #     return x
+    # return 0
 
 def neurona(entradas, pesos):
     if (len(entradas) != len(pesos)):
@@ -63,33 +77,36 @@ def truncate(number, digits):
 def calcularError(resultado, esperado):
     return esperado - resultado
 
-def calcularNuevoPeso(pesoActual, error):
-    nuevoPeso = pesoActual + (pesoActual * error * learnRate)
+def calcularNuevoPeso(pesoActual, error, nota):
+    nuevoPeso = pesoActual + (nota * error * learnRate)
     return nuevoPeso
 
-def ajustarPesos(pesosActuales, error):
-    return [calcularNuevoPeso(peso, error) for peso in pesosActuales]
+def ajustarPesos(pesosActuales, notaActual, error):
+    return [calcularNuevoPeso(peso, error, nota) for peso,nota in zip(pesosActuales, notaActual)]
 
-def aprender(iteraciones):
-    conjuntoDeAprendizaje = [generarNotasIniciales() + [1] for _ in range(iteraciones)]
-    pesos = generarPesosIniciales()
-    for i, nota in enumerate(conjuntoDeAprendizaje):
-        res = neurona(nota, pesos)
-        resEsperado = aproboSegunNotas(nota)
-        error = calcularError(res, resEsperado)
-        print(i, res, resEsperado, error)
-        nuevosPesos = ajustarPesos(pesos, error)
-        pesos = nuevosPesos
+def aprender(pesos, iteraciones, repetir, printMod):
+    conjuntoDeAprendizaje = [generarNotasIniciales() + [1] for _ in range(iteraciones//2)]
+    for _ in range(repetir):
+        for i, nota in enumerate(conjuntoDeAprendizaje):
+            res = neurona(nota, pesos)
+            resEsperado = aproboSegunNotas(nota)
+            error = calcularError(res, resEsperado)
+            nuevosPesos = ajustarPesos(pesos, nota, error)
+            if (i % printMod == 0):
+                print(i, error)
+            pesos = nuevosPesos
     return pesos
 
 def probar(pesos):
     notaPaso = [1, 1, 1, 1, 1, 1, 1]
-    notaQuedo = [0.1, 1, 1, 1, 1, 1, 1]
+    notaQuedo = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1]
     print(neurona(notaPaso, pesos))
     print(neurona(notaQuedo, pesos))
 
 def main():
-    test = aprender(1000000)
+    pesos = generarPesosIniciales()
+    probar(pesos)
+    test = aprender(pesos, 10000, 100, 1000)
     print(test) 
     probar(test)
 
